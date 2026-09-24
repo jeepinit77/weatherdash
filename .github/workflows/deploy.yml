@@ -1,0 +1,80 @@
+# Builds and deploys with deploy.sh whenever prod or dev changes, or on demand
+# from the Actions tab. Needs the repository secrets listed in the README
+# ("Deploying with GitHub Actions"); without DEPLOY_HOST it skips itself, so
+# forks that have not set it up do nothing.
+name: Deploy
+
+on:
+  push:
+    branches: [prod, dev]
+    paths-ignore: ['**.md', 'LICENSE']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy per environment at a time; a newer push waits rather than cutting
+# an upload short.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'prod' || github.ref_name == 'dev'
+    steps:
+      - name: Check deploy is configured
+        id: configured
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "::notice::Deploy secrets are not set; skipping. See the README, 'Deploying with GitHub Actions'."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.configured.outputs.ok == 'true'
+
+      - uses: actions/setup-node@v7
+        if: steps.configured.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+        if: steps.configured.outputs.ok == 'true'
+
+      - name: Set up SSH
+        if: steps.configured.outputs.ok == 'true'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_KNOWN_HOSTS" ]; then
+            echo "::error::DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS must both be set."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          # Fail at once on a host key or login problem instead of waiting for a prompt.
+          printf 'Host *\n  BatchMode yes\n  StrictHostKeyChecking yes\n' > ~/.ssh/config
+
+      - name: Deploy ${{ github.ref_name }}
+        if: steps.configured.outputs.ok == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_WEB_ROOT: ${{ secrets.DEPLOY_WEB_ROOT }}
+          SITE_ORIGIN: ${{ secrets.SITE_ORIGIN }}
+          # Unset repository variables arrive as "", which deploy.sh would read
+          # as "deploy to the web root", so the defaults are spelled out here.
+          PROD_FOLDER: ${{ vars.PROD_FOLDER || 'weatherdash' }}
+          DEV_FOLDER: ${{ vars.DEV_FOLDER || 'weatherdash-dev' }}
+        run: ./deploy.sh "${{ github.ref_name }}"

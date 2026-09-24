@@ -75,7 +75,7 @@ backend/
   shared host will do; a VPS works too.
 - **HTTPS** on the domain. Google sign-in and the installable app both need it.
 - **A cron job** every 5 minutes. Shared hosts offer this in their control panel.
-- **Node.js 20 or newer** on your own machine to build the frontend. The server never needs Node.
+- **Node.js 20.19+ or 22.12+** on your own machine to build the frontend. The server never needs Node.
 - A **Google Cloud** project for sign-in (free; below).
 
 Forecasts come from Open-Meteo everywhere in the world, and from the US National Weather
@@ -225,6 +225,43 @@ reading and starts its history backfill straight away, and its owner's Refresh b
 fetches a new reading on demand, which is enough for testing. Give a dev station its own
 Ambient API key: the rate limit is per key, so a dev station sharing production's key takes
 requests away from the production poller.
+
+## Deploying with GitHub Actions
+
+`.github/workflows/deploy.yml` runs `deploy.sh` on GitHub's machines whenever `prod` or
+`dev` changes (changes to Markdown files and the license excepted), and on demand from the
+Actions tab (**Deploy → Run workflow**, choosing the branch). Until its secrets are set it
+skips itself, so it does nothing in a fork that has not set it up.
+
+1. **Make a deploy key.** On your own machine (Git Bash on Windows works):
+   ```bash
+   ssh-keygen -t ed25519 -N "" -C "weatherdash deploy" -f weatherdash-deploy
+   ```
+   This writes `weatherdash-deploy` (private) and `weatherdash-deploy.pub` (public).
+2. **Let the key in.** Add the contents of `weatherdash-deploy.pub` to your host's
+   authorized SSH keys (on shared hosts, usually a control panel page called SSH Access or
+   SSH Keys; otherwise append it to `~/.ssh/authorized_keys` on the server). Check it:
+   `ssh -i weatherdash-deploy -p <port> <user>@<host> echo ok`.
+3. **Record the server's host key**, so the workflow can tell it is talking to your server:
+   ```bash
+   ssh-keyscan -p <port> <host>
+   ```
+4. **Add repository secrets** under Settings → Secrets and variables → Actions → Secrets:
+
+   | Secret | Value |
+   |--------|-------|
+   | `DEPLOY_SSH_KEY` | The whole contents of the private key file `weatherdash-deploy` |
+   | `DEPLOY_KNOWN_HOSTS` | The output of `ssh-keyscan` from step 3 |
+   | `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PORT`, `DEPLOY_WEB_ROOT`, `SITE_ORIGIN` | The same values as in `deploy.config` |
+
+   `PROD_FOLDER` and `DEV_FOLDER` default to `weatherdash` and `weatherdash-dev`; to change
+   them, set repository **variables** (the Variables tab) of those names.
+5. Delete the private key file from your machine, or keep it somewhere safe. GitHub never
+   shows a secret again once saved, so to replace the key, repeat these steps.
+
+Secrets are not passed to workflows run from other people's pull requests, and GitHub masks
+them in the logs. Each deploy's log is on the Actions tab; a failed run shows which step of
+`deploy.sh` stopped.
 
 ## License
 

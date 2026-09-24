@@ -66,6 +66,10 @@ BASE_PATH="/${SITE_FOLDER:+$SITE_FOLDER/}"
 SITE_URL="$SITE_ORIGIN${SITE_FOLDER:+/$SITE_FOLDER}"
 
 CURRENT_BRANCH="$(git branch --show-current)"
+# A CI checkout can be a detached HEAD; GitHub Actions names the branch instead.
+if [ -z "$CURRENT_BRANCH" ] && [ -n "${GITHUB_ACTIONS:-}" ]; then
+  CURRENT_BRANCH="${GITHUB_REF_NAME:-}"
+fi
 if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
   echo "Refusing to deploy $TARGET from branch '$CURRENT_BRANCH'."
   echo "Switch to the '$EXPECTED_BRANCH' branch first."
