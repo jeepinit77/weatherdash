@@ -1,0 +1,25 @@
+# No directory listings anywhere in the app, including api/ and assets/.
+Options -Indexes
+
+# The install manifest, so phones offer "Add to home screen" with the right name and icon.
+AddType application/manifest+json .webmanifest
+
+<IfModule mod_headers.c>
+  # Browsers must take each file as the type the server declares, never guess.
+  Header always set X-Content-Type-Options "nosniff"
+  # Other sites get the origin at most, never a station's full URL.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Only this site may frame the dashboard.
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# The base-path placeholder below is filled in by the build (vite.config.ts),
+# which writes this file to dist/.htaccess. Upload that copy, not this one.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase %BASE_PATH%
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . %BASE_PATH%index.html [L]
+</IfModule>

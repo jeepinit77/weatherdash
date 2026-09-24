@@ -1,0 +1,19 @@
+# Server details for deploy.sh. Copy to deploy.config (gitignored) and fill in.
+# Any of these can instead be set as environment variables, which win over this file.
+
+# SSH login for the host. Many shared hosts use a non-standard SSH port.
+DEPLOY_HOST="ssh.example.com"
+DEPLOY_USER="username"
+DEPLOY_PORT="22"
+
+# Absolute path on the server of the folder your domain serves.
+DEPLOY_WEB_ROOT="/home/username/public_html"
+
+# The public address of that folder, without a trailing slash.
+SITE_ORIGIN="https://example.com"
+
+# The folder beneath DEPLOY_WEB_ROOT each environment lives in. It is also the
+# URL path: prod is served at $SITE_ORIGIN/$PROD_FOLDER/. Set a folder to ""
+# to deploy that environment to the web root itself.
+PROD_FOLDER="weatherdash"
+DEV_FOLDER="weatherdash-dev"

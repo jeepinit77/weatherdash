@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WeatherDash</title>
+    <meta name="description" content="Live dashboards for Ambient Weather personal weather stations: current conditions, local forecast and recorded history." />
+    <meta property="og:title" content="WeatherDash" />
+    <meta property="og:description" content="Live dashboards for Ambient Weather personal weather stations." />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#080C14" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="WeatherDash" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" />
+    <script>
+      // The theme is kept in this browser (a signed-in user's shared theme is
+      // copied here too), so it is known before anything loads. Read before the
+      // first paint, otherwise a light theme starts the page on a dark flash.
+      try {
+        var stored = localStorage.getItem('weatherdash_theme');
+        var pages = { midnight: '#080C14', paper: '#F2EDE5', chalk: '#21262E', terracotta: '#EBE1D2' };
+        if (pages[stored]) {
+          document.documentElement.dataset.theme = stored;
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', pages[stored]);
+        }
+      } catch (e) { /* storage unavailable */ }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p style="font-family: sans-serif; padding: 2rem; text-align: center;">
+        WeatherDash needs JavaScript to show live station data. Please enable it and reload.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

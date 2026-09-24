@@ -1,0 +1,12 @@
+# This folder holds the config, the SQLite database, the cache, the session
+# files and the cron log (logs/); the rules below cover every subfolder too.
+# It sits inside the web root so that the whole app lives under one
+# folder, so nothing here may ever be served: the PHP endpoints in ../api read
+# it from disk instead.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

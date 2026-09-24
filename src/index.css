@@ -1,0 +1,983 @@
+@import "tailwindcss";
+
+/* Outfit is loaded from index.html with a preconnect, so it no longer blocks the
+   stylesheet. Tailwind v4 reads fonts from @theme, not from a config file. */
+@theme {
+  --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+/*
+  Theming
+  =======
+
+  Every colour in the app comes from a token defined here, never from a Tailwind
+  palette class. A theme is one block of custom properties selected by the
+  `data-theme` attribute on <html>; swapping that attribute restyles the whole
+  dashboard without a re-render.
+
+  Tokens are semantic (what a colour is for) rather than descriptive (what it
+  looks like), so a light theme can answer "muted label" with a dark grey and a
+  dark theme with a light one. The groups are:
+
+    ink        text, from strongest to faintest
+    line/fill  hairlines and washes drawn on top of a surface
+    well       recessed areas inside a card; scrim, the backdrop behind a modal
+    accent…alt the six roles that carry meaning: accent, info, good, warn,
+               danger and alt. Each has a solid, a text-weight variant that
+               stays legible on the page background, a soft wash and a border.
+    data       the weather scales: temperature ramp, rain rate ramp, gauge
+               colours and chart series.
+    surfaces   .tile / .glass-panel / .glass-button, including radius, shadow
+               and blur, so a flat theme can switch off effects a glassy one
+               leans on.
+
+  The default, with no attribute set, is Midnight Glass.
+*/
+
+:root,
+:root[data-theme='midnight'] {
+  color-scheme: dark;
+
+  --app-bg: #080C14;
+  --app-bg-image:
+    radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.25) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(124, 58, 237, 0.2) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(14, 165, 233, 0.15) 0px, transparent 50%);
+
+  --ink: #F9FAFB;
+  --ink-2: #CBD5E1;
+  --ink-3: #94A3B8;
+  --ink-4: #8391A7;
+
+  --line: rgba(255, 255, 255, 0.10);
+  --line-soft: rgba(255, 255, 255, 0.05);
+  --line-strong: rgba(255, 255, 255, 0.20);
+  --fill: rgba(255, 255, 255, 0.10);
+  --fill-soft: rgba(255, 255, 255, 0.05);
+  --fill-strong: rgba(255, 255, 255, 0.15);
+
+  --well: rgba(15, 23, 42, 0.55);
+  --well-deep: #020617;
+  /* Solid card stock: modals and dropdowns, which must not show the page through. */
+  --card: #0F172A;
+  --scrim: rgba(0, 0, 0, 0.78);
+
+  --accent: #3B82F6;
+  --accent-strong: #2563EB;
+  --accent-ink: #FFFFFF;
+  --accent-text: #60A5FA;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+  --accent-line: rgba(59, 130, 246, 0.35);
+
+  --info: #06B6D4;
+  --info-text: #67E8F9;
+  --info-soft: rgba(6, 182, 212, 0.12);
+  --info-line: rgba(6, 182, 212, 0.32);
+
+  --good: #10B981;
+  --good-text: #34D399;
+  --good-soft: rgba(16, 185, 129, 0.12);
+  --good-line: rgba(16, 185, 129, 0.30);
+
+  --warn: #F59E0B;
+  --warn-text: #FBBF24;
+  --warn-soft: rgba(245, 158, 11, 0.14);
+  --warn-line: rgba(245, 158, 11, 0.32);
+
+  --danger: #F43F5E;
+  --danger-text: #FB7185;
+  --danger-soft: rgba(244, 63, 94, 0.14);
+  --danger-line: rgba(244, 63, 94, 0.32);
+
+  --alt: #8B5CF6;
+  --alt-text: #A78BFA;
+  --alt-soft: rgba(139, 92, 246, 0.14);
+  --alt-line: rgba(139, 92, 246, 0.32);
+
+  --severe: #FB923C;
+  --cool: #7DD3FC;
+  --snow: #E0F2FE;
+  --sun: #FBBF24;
+  --moon: #A5B4FC;
+  --sunrise: #FBBF24;
+  --sunset: #FB7185;
+  --daylight-1: #FBBF24;
+  --daylight-2: #FB923C;
+  --daylight-3: #818CF8;
+
+  --temp-none: #94A3B8;
+  --temp-1: #A78BFA;
+  --temp-2: #60A5FA;
+  --temp-3: #22D3EE;
+  --temp-4: #34D399;
+  --temp-5: #4ADE80;
+  --temp-6: #A3E635;
+  --temp-7: #FACC15;
+  --temp-8: #FB923C;
+  --temp-9: #EF4444;
+
+  --range-low: #38BDF8;
+  --range-mid: #4ADE80;
+  --range-high: #FB923C;
+
+  --rate-1: #4ADE80;
+  --rate-2: #EAB308;
+  --rate-3: #F97316;
+  --rate-4: #EF4444;
+  --rate-5: #D946EF;
+
+  --rain-total: #22D3EE;
+  /* How far the rain tile's radar glow is allowed to go. A wash that reads as
+     weather on a dark card reads as a stain on a pale one. */
+  --rate-glow: 1;
+  --wind-speed: #FACC15;
+  --wind-gust: #38BDF8;
+  --vane-1: #D99E1E;
+  --vane-2: #F2BC2E;
+  --vane-3: #FFDF4A;
+  --vane-edge: rgba(8, 14, 28, 0.45);
+  --vane-shadow: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.6));
+  --humid-now: #38BDF8;
+  --humid-range: #A78BFA;
+
+  --ring-track: rgba(255, 255, 255, 0.09);
+  --ring-groove: rgba(0, 0, 0, 0.40);
+  --ring-lip: rgba(255, 255, 255, 0.14);
+  --ring-tick: rgba(255, 255, 255, 0.85);
+
+  --rain-fill: linear-gradient(to top,
+    rgba(34, 211, 238, 0.28) 0%,
+    rgba(34, 211, 238, 0.24) 72%,
+    rgba(103, 232, 249, 0.40) 96%,
+    rgba(103, 232, 249, 0.16) 100%);
+
+  --chart-temp-high: #F97316;
+  --chart-temp-low: #3B82F6;
+  --chart-dew: #06B6D4;
+  --chart-gust: #F59E0B;
+  --chart-wind: #10B981;
+  --chart-pressure: #3B82F6;
+  --chart-rain: #06B6D4;
+  --chart-solar: #EAB308;
+  --chart-grid: rgba(255, 255, 255, 0.05);
+  --chart-axis: #64748B;
+  --chart-tip-bg: #0F172A;
+  --chart-tip-line: rgba(255, 255, 255, 0.10);
+
+  --tile-radius: 1.25rem;
+  --tile-bg:
+    radial-gradient(120% 120% at 0% 0%, rgba(99, 102, 241, 0.28) 0%, transparent 55%),
+    linear-gradient(160deg, rgba(30, 41, 99, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+  --tile-border: rgba(255, 255, 255, 0.09);
+  --tile-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+
+  --panel-bg: rgba(15, 23, 42, 0.65);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-border-hover: rgba(255, 255, 255, 0.15);
+  --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --panel-shadow-hover: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+  --panel-blur: 16px;
+
+  --btn-bg: rgba(255, 255, 255, 0.06);
+  --btn-bg-hover: rgba(255, 255, 255, 0.12);
+  --btn-border: rgba(255, 255, 255, 0.10);
+  --btn-border-hover: rgba(255, 255, 255, 0.20);
+
+  --glow-temp: 0 0 20px rgba(249, 115, 22, 0.4);
+  /* Behind the very large tile figures, to lift them off a busy card. */
+  --glow-figure: 0 0 28px rgba(0, 0, 0, 0.55);
+  --marker-ring: rgba(255, 255, 255, 0.9);
+  --marker-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+
+  --scrollbar-track: rgba(15, 23, 42, 0.5);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.30);
+}
+
+/*
+  Warm Architectural Light — "Paper & Glass".
+  Warm paper for the page, near-white card stock floating on soft brown-grey
+  shadows, and a drawing-office blue for the accent. Glows are off: a halo on a
+  white page reads as a printing fault rather than as light.
+*/
+:root[data-theme='paper'] {
+  color-scheme: light;
+
+  --app-bg: #F2EDE5;
+  --app-bg-image:
+    radial-gradient(at 0% 0%, rgba(255, 253, 250, 0.9) 0px, transparent 55%),
+    radial-gradient(at 100% 0%, rgba(47, 109, 158, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(196, 168, 130, 0.18) 0px, transparent 55%);
+
+  --ink: #1F1B16;
+  --ink-2: #4A423A;
+  --ink-3: #6A6055;
+  --ink-4: #786C60;
+
+  --line: rgba(40, 30, 20, 0.14);
+  --line-soft: rgba(40, 30, 20, 0.07);
+  --line-strong: rgba(40, 30, 20, 0.24);
+  --fill: rgba(40, 30, 20, 0.06);
+  --fill-soft: rgba(40, 30, 20, 0.035);
+  --fill-strong: rgba(40, 30, 20, 0.10);
+
+  --well: rgba(40, 30, 20, 0.05);
+  --well-deep: #EFE8DD;
+  /* Solid card stock: modals and dropdowns, which must not show the page through. */
+  --card: #FFFDFA;
+  --scrim: rgba(38, 29, 20, 0.45);
+
+  --accent: #2F6D9E;
+  --accent-strong: #245A85;
+  --accent-ink: #FFFFFF;
+  --accent-text: #245A85;
+  --accent-soft: rgba(47, 109, 158, 0.10);
+  --accent-line: rgba(47, 109, 158, 0.32);
+
+  --info: #0E7490;
+  --info-text: #0E6379;
+  --info-soft: rgba(14, 116, 144, 0.10);
+  --info-line: rgba(14, 116, 144, 0.30);
+
+  --good: #3F7D4E;
+  --good-text: #34683F;
+  --good-soft: rgba(63, 125, 78, 0.10);
+  --good-line: rgba(63, 125, 78, 0.30);
+
+  --warn: #B4791B;
+  --warn-text: #8F5F13;
+  --warn-soft: rgba(180, 121, 27, 0.12);
+  --warn-line: rgba(180, 121, 27, 0.32);
+
+  --danger: #B23A3A;
+  --danger-text: #972E2E;
+  --danger-soft: rgba(178, 58, 58, 0.10);
+  --danger-line: rgba(178, 58, 58, 0.30);
+
+  --alt: #6B5AA8;
+  --alt-text: #58488F;
+  --alt-soft: rgba(107, 90, 168, 0.10);
+  --alt-line: rgba(107, 90, 168, 0.30);
+
+  --severe: #C2551D;
+  --cool: #2E6FD0;
+  --snow: #6F93AE;
+  --sun: #B4791B;
+  --moon: #58488F;
+  --sunrise: #B4791B;
+  --sunset: #B23A3A;
+  --daylight-1: #C89A2A;
+  --daylight-2: #C2551D;
+  --daylight-3: #6B5AA8;
+
+  --temp-none: #8A8175;
+  --temp-1: #6D5BC4;
+  --temp-2: #2E6FD0;
+  --temp-3: #0E8AA8;
+  --temp-4: #0E8A6B;
+  --temp-5: #3E8C3A;
+  --temp-6: #7A8C16;
+  --temp-7: #B8860B;
+  --temp-8: #D2681C;
+  --temp-9: #C22F2F;
+
+  --range-low: #1E7FB8;
+  --range-mid: #3E8C3A;
+  --range-high: #D2681C;
+
+  --rate-1: #3E8C3A;
+  --rate-2: #B8860B;
+  --rate-3: #D2681C;
+  --rate-4: #C22F2F;
+  --rate-5: #9B2FA0;
+
+  --rain-total: #0E7490;
+  /* How far the rain tile's radar glow is allowed to go. A wash that reads as
+     weather on a dark card reads as a stain on a pale one. */
+  --rate-glow: 0.5;
+  --wind-speed: #B8860B;
+  --wind-gust: #2E6FD0;
+  --vane-1: #A9761A;
+  --vane-2: #C99A2B;
+  --vane-3: #E2BC55;
+  --vane-edge: rgba(60, 45, 25, 0.30);
+  --vane-shadow: drop-shadow(0 2px 4px rgba(58, 44, 28, 0.28));
+  --humid-now: #1E7FB8;
+  --humid-range: #6D5BC4;
+
+  --ring-track: rgba(40, 30, 20, 0.10);
+  --ring-groove: rgba(40, 30, 20, 0.10);
+  --ring-lip: rgba(255, 255, 255, 0.85);
+  --ring-tick: rgba(40, 30, 20, 0.65);
+
+  --rain-fill: linear-gradient(to top,
+    rgba(14, 116, 144, 0.13) 0%,
+    rgba(14, 116, 144, 0.11) 72%,
+    rgba(14, 116, 144, 0.32) 96%,
+    rgba(14, 116, 144, 0.10) 100%);
+
+  --chart-temp-high: #D2681C;
+  --chart-temp-low: #2E6FD0;
+  --chart-dew: #0E8AA8;
+  --chart-gust: #B8860B;
+  --chart-wind: #3F7D4E;
+  --chart-pressure: #2E6FD0;
+  --chart-rain: #0E7490;
+  --chart-solar: #B8860B;
+  --chart-grid: rgba(40, 30, 20, 0.08);
+  --chart-axis: #8A8175;
+  --chart-tip-bg: #FFFDFA;
+  --chart-tip-line: rgba(40, 30, 20, 0.14);
+
+  --tile-radius: 1rem;
+  --tile-bg: linear-gradient(170deg, #FFFDFA 0%, #FBF6EE 100%);
+  --tile-border: rgba(40, 30, 20, 0.11);
+  --tile-shadow: 0 1px 2px rgba(58, 44, 28, 0.06), 0 12px 28px rgba(58, 44, 28, 0.08);
+
+  --panel-bg: rgba(255, 253, 250, 0.78);
+  --panel-border: rgba(40, 30, 20, 0.10);
+  --panel-border-hover: rgba(40, 30, 20, 0.20);
+  --panel-shadow: 0 1px 2px rgba(58, 44, 28, 0.05), 0 8px 24px rgba(58, 44, 28, 0.07);
+  --panel-shadow-hover: 0 2px 4px rgba(58, 44, 28, 0.07), 0 14px 34px rgba(58, 44, 28, 0.10);
+  --panel-blur: 14px;
+
+  --btn-bg: rgba(255, 253, 250, 0.75);
+  --btn-bg-hover: #FFFFFF;
+  --btn-border: rgba(40, 30, 20, 0.14);
+  --btn-border-hover: rgba(40, 30, 20, 0.26);
+
+  --glow-temp: none;
+  --glow-figure: none;
+  --marker-ring: #FFFDFA;
+  --marker-shadow: 0 1px 3px rgba(58, 44, 28, 0.35);
+
+  --scrollbar-track: rgba(40, 30, 20, 0.06);
+  --scrollbar-thumb: rgba(40, 30, 20, 0.22);
+  --scrollbar-thumb-hover: rgba(40, 30, 20, 0.38);
+}
+
+/*
+  Matte Slate & Chalk — flat, zero-glow minimalist.
+  One flat slate for the page, one flat slate for the card, hairlines instead of
+  shadows, and chalk-toned text. Every gradient, blur, glow and drop shadow is
+  switched off here; separation is carried by the step in surface value alone.
+*/
+:root[data-theme='chalk'] {
+  color-scheme: dark;
+
+  --app-bg: #21262E;
+  --app-bg-image: none;
+
+  --ink: #E9E7E2;
+  --ink-2: #C4C2BC;
+  --ink-3: #B1AFA8;
+  --ink-4: #999893;
+
+  --line: rgba(255, 255, 255, 0.09);
+  --line-soft: rgba(255, 255, 255, 0.05);
+  --line-strong: rgba(255, 255, 255, 0.17);
+  --fill: rgba(255, 255, 255, 0.07);
+  --fill-soft: rgba(255, 255, 255, 0.04);
+  --fill-strong: rgba(255, 255, 255, 0.11);
+
+  --well: rgba(0, 0, 0, 0.18);
+  --well-deep: #1B1F25;
+  /* Solid card stock: modals and dropdowns, which must not show the page through. */
+  --card: #262C34;
+  --scrim: rgba(16, 18, 22, 0.86);
+
+  --accent: #7595B2;
+  --accent-strong: #5F7D97;
+  --accent-ink: #14181D;
+  --accent-text: #9DB6CC;
+  --accent-soft: rgba(117, 149, 178, 0.14);
+  --accent-line: rgba(117, 149, 178, 0.34);
+
+  --info: #6FA5AC;
+  --info-text: #93BEC4;
+  --info-soft: rgba(111, 165, 172, 0.14);
+  --info-line: rgba(111, 165, 172, 0.32);
+
+  --good: #7E9E74;
+  --good-text: #9DB894;
+  --good-soft: rgba(126, 158, 116, 0.14);
+  --good-line: rgba(126, 158, 116, 0.32);
+
+  --warn: #BBA06A;
+  --warn-text: #D0B98C;
+  --warn-soft: rgba(187, 160, 106, 0.14);
+  --warn-line: rgba(187, 160, 106, 0.32);
+
+  --danger: #BC8078;
+  --danger-text: #D09A93;
+  --danger-soft: rgba(188, 128, 120, 0.14);
+  --danger-line: rgba(188, 128, 120, 0.32);
+
+  --alt: #9A8FAE;
+  --alt-text: #B5ACC5;
+  --alt-soft: rgba(154, 143, 174, 0.14);
+  --alt-line: rgba(154, 143, 174, 0.32);
+
+  --severe: #C18D66;
+  --cool: #8FA9C2;
+  --snow: #CFCEC9;
+  --sun: #C0A468;
+  --moon: #9A8FAE;
+  --sunrise: #C0A468;
+  --sunset: #BC8078;
+  --daylight-1: #C0A468;
+  --daylight-2: #C18D66;
+  --daylight-3: #9A8FAE;
+
+  --temp-none: #7C7B76;
+  --temp-1: #8F86B8;
+  --temp-2: #7C97BE;
+  --temp-3: #6FA5AC;
+  --temp-4: #6FA78F;
+  --temp-5: #86A87C;
+  --temp-6: #A2A873;
+  --temp-7: #C0A468;
+  --temp-8: #C18D66;
+  --temp-9: #BE7268;
+
+  --range-low: #7C97BE;
+  --range-mid: #86A87C;
+  --range-high: #C18D66;
+
+  --rate-1: #86A87C;
+  --rate-2: #C0A468;
+  --rate-3: #C18D66;
+  --rate-4: #BE7268;
+  --rate-5: #A98BB0;
+
+  --rain-total: #6FA5AC;
+  /* How far the rain tile's radar glow is allowed to go. A wash that reads as
+     weather on a dark card reads as a stain on a pale one. */
+  --rate-glow: 0.35;
+  --wind-speed: #C0A468;
+  --wind-gust: #7C97BE;
+  --vane-1: #9C8759;
+  --vane-2: #B49D6B;
+  --vane-3: #CBB57F;
+  --vane-edge: rgba(16, 18, 22, 0.45);
+  --vane-shadow: none;
+  --humid-now: #7C97BE;
+  --humid-range: #9A8FAE;
+
+  --ring-track: rgba(255, 255, 255, 0.07);
+  --ring-groove: transparent;
+  --ring-lip: transparent;
+  --ring-tick: rgba(233, 231, 226, 0.8);
+
+  --rain-fill: linear-gradient(to top,
+    rgba(111, 165, 172, 0.16) 0%,
+    rgba(111, 165, 172, 0.14) 72%,
+    rgba(111, 165, 172, 0.30) 96%,
+    rgba(111, 165, 172, 0.10) 100%);
+
+  --chart-temp-high: #C18D66;
+  --chart-temp-low: #7C97BE;
+  --chart-dew: #6FA5AC;
+  --chart-gust: #C0A468;
+  --chart-wind: #86A87C;
+  --chart-pressure: #7C97BE;
+  --chart-rain: #6FA5AC;
+  --chart-solar: #C0A468;
+  --chart-grid: rgba(255, 255, 255, 0.05);
+  --chart-axis: #75746F;
+  --chart-tip-bg: #1B1F25;
+  --chart-tip-line: rgba(255, 255, 255, 0.10);
+
+  --tile-radius: 0.5rem;
+  --tile-bg: #2B313A;
+  --tile-border: rgba(255, 255, 255, 0.08);
+  --tile-shadow: none;
+
+  --panel-bg: #262C34;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-border-hover: rgba(255, 255, 255, 0.16);
+  --panel-shadow: none;
+  --panel-shadow-hover: none;
+  --panel-blur: 0px;
+
+  --btn-bg: rgba(255, 255, 255, 0.05);
+  --btn-bg-hover: rgba(255, 255, 255, 0.10);
+  --btn-border: rgba(255, 255, 255, 0.10);
+  --btn-border-hover: rgba(255, 255, 255, 0.20);
+
+  --glow-temp: none;
+  --glow-figure: none;
+  --marker-ring: #E9E7E2;
+  --marker-shadow: none;
+
+  --scrollbar-track: rgba(255, 255, 255, 0.04);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.14);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.26);
+}
+
+/*
+  Desert Terracotta & Sage — earth & mineral.
+  Sun-bleached sand for the page, fired-clay accents and sage for everything
+  that means "fine". The data ramps are pulled toward the same earth range, so
+  a hot afternoon reads as brick rather than as a warning light.
+*/
+:root[data-theme='terracotta'] {
+  color-scheme: light;
+
+  --app-bg: #EBE1D2;
+  --app-bg-image:
+    radial-gradient(at 0% 0%, rgba(180, 85, 47, 0.10) 0px, transparent 50%),
+    radial-gradient(at 100% 10%, rgba(94, 138, 78, 0.10) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(255, 250, 240, 0.8) 0px, transparent 60%);
+
+  --ink: #2E2118;
+  --ink-2: #57453A;
+  --ink-3: #6E594B;
+  --ink-4: #7B6555;
+
+  --line: rgba(90, 62, 42, 0.16);
+  --line-soft: rgba(90, 62, 42, 0.08);
+  --line-strong: rgba(90, 62, 42, 0.26);
+  --fill: rgba(90, 62, 42, 0.07);
+  --fill-soft: rgba(90, 62, 42, 0.04);
+  --fill-strong: rgba(90, 62, 42, 0.12);
+
+  --well: rgba(90, 62, 42, 0.06);
+  --well-deep: #E6DAC8;
+  /* Solid card stock: modals and dropdowns, which must not show the page through. */
+  --card: #FAF4E8;
+  --scrim: rgba(52, 35, 22, 0.48);
+
+  --accent: #B4552F;
+  --accent-strong: #97431F;
+  --accent-ink: #FFF6EE;
+  --accent-text: #8F3F20;
+  --accent-soft: rgba(180, 85, 47, 0.11);
+  --accent-line: rgba(180, 85, 47, 0.32);
+
+  --info: #3E8087;
+  --info-text: #2F6A70;
+  --info-soft: rgba(62, 128, 135, 0.11);
+  --info-line: rgba(62, 128, 135, 0.30);
+
+  --good: #5E8A4E;
+  --good-text: #4B7240;
+  --good-soft: rgba(94, 138, 78, 0.12);
+  --good-line: rgba(94, 138, 78, 0.30);
+
+  --warn: #B5822A;
+  --warn-text: #8D641D;
+  --warn-soft: rgba(181, 130, 42, 0.13);
+  --warn-line: rgba(181, 130, 42, 0.32);
+
+  --danger: #A23B2E;
+  --danger-text: #8A2F24;
+  --danger-soft: rgba(162, 59, 46, 0.11);
+  --danger-line: rgba(162, 59, 46, 0.30);
+
+  --alt: #7D5A6E;
+  --alt-text: #67475A;
+  --alt-soft: rgba(125, 90, 110, 0.11);
+  --alt-line: rgba(125, 90, 110, 0.30);
+
+  --severe: #C06428;
+  --cool: #4E6E93;
+  --snow: #7F97A4;
+  --sun: #B5822A;
+  --moon: #7D5A6E;
+  --sunrise: #B5822A;
+  --sunset: #A23B2E;
+  --daylight-1: #C99A34;
+  --daylight-2: #C06428;
+  --daylight-3: #7D5A6E;
+
+  --temp-none: #9A8B79;
+  --temp-1: #6B5F86;
+  --temp-2: #4E6E93;
+  --temp-3: #3E8087;
+  --temp-4: #4A8570;
+  --temp-5: #5E8A4E;
+  --temp-6: #858C36;
+  --temp-7: #B5822A;
+  --temp-8: #C06428;
+  --temp-9: #A33A28;
+
+  --range-low: #4E6E93;
+  --range-mid: #5E8A4E;
+  --range-high: #C06428;
+
+  --rate-1: #5E8A4E;
+  --rate-2: #B5822A;
+  --rate-3: #C06428;
+  --rate-4: #A33A28;
+  --rate-5: #7D5A6E;
+
+  --rain-total: #3E8087;
+  /* How far the rain tile's radar glow is allowed to go. A wash that reads as
+     weather on a dark card reads as a stain on a pale one. */
+  --rate-glow: 0.55;
+  --wind-speed: #B5822A;
+  --wind-gust: #4E6E93;
+  --vane-1: #A8641D;
+  --vane-2: #C4832C;
+  --vane-3: #DDA347;
+  --vane-edge: rgba(70, 45, 25, 0.35);
+  --vane-shadow: drop-shadow(0 2px 4px rgba(120, 80, 50, 0.30));
+  --humid-now: #3E8087;
+  --humid-range: #7D5A6E;
+
+  --ring-track: rgba(90, 62, 42, 0.13);
+  --ring-groove: rgba(90, 62, 42, 0.10);
+  --ring-lip: rgba(255, 255, 255, 0.70);
+  --ring-tick: rgba(46, 33, 24, 0.65);
+
+  --rain-fill: linear-gradient(to top,
+    rgba(62, 128, 135, 0.16) 0%,
+    rgba(62, 128, 135, 0.14) 72%,
+    rgba(62, 128, 135, 0.32) 96%,
+    rgba(62, 128, 135, 0.12) 100%);
+
+  --chart-temp-high: #C06428;
+  --chart-temp-low: #4E6E93;
+  --chart-dew: #3E8087;
+  --chart-gust: #B5822A;
+  --chart-wind: #5E8A4E;
+  --chart-pressure: #4E6E93;
+  --chart-rain: #3E8087;
+  --chart-solar: #B5822A;
+  --chart-grid: rgba(90, 62, 42, 0.10);
+  --chart-axis: #87705F;
+  --chart-tip-bg: #F7F0E3;
+  --chart-tip-line: rgba(90, 62, 42, 0.18);
+
+  --tile-radius: 1.5rem;
+  --tile-bg:
+    radial-gradient(130% 130% at 0% 0%, rgba(180, 85, 47, 0.07) 0%, transparent 60%),
+    linear-gradient(165deg, #FAF4E8 0%, #F3E9D8 100%);
+  --tile-border: rgba(90, 62, 42, 0.14);
+  --tile-shadow: 0 1px 2px rgba(120, 80, 50, 0.07), 0 14px 30px rgba(120, 80, 50, 0.10);
+
+  --panel-bg: rgba(250, 244, 232, 0.80);
+  --panel-border: rgba(90, 62, 42, 0.13);
+  --panel-border-hover: rgba(90, 62, 42, 0.24);
+  --panel-shadow: 0 1px 2px rgba(120, 80, 50, 0.06), 0 10px 26px rgba(120, 80, 50, 0.09);
+  --panel-shadow-hover: 0 2px 4px rgba(120, 80, 50, 0.08), 0 16px 36px rgba(120, 80, 50, 0.12);
+  --panel-blur: 14px;
+
+  --btn-bg: rgba(250, 244, 232, 0.75);
+  --btn-bg-hover: #FEFAF2;
+  --btn-border: rgba(90, 62, 42, 0.16);
+  --btn-border-hover: rgba(90, 62, 42, 0.28);
+
+  --glow-temp: none;
+  --glow-figure: none;
+  --marker-ring: #FAF4E8;
+  --marker-shadow: 0 1px 3px rgba(120, 80, 50, 0.35);
+
+  --scrollbar-track: rgba(90, 62, 42, 0.07);
+  --scrollbar-thumb: rgba(90, 62, 42, 0.24);
+  --scrollbar-thumb-hover: rgba(90, 62, 42, 0.40);
+}
+
+/*
+  Publishing the tokens as Tailwind colours, so `text-ink-3`, `bg-well` and
+  `border-line` are ordinary utilities. `inline` keeps each utility pointing at
+  the live variable rather than copying its value, which is what lets a theme
+  swap take effect with nothing but an attribute change.
+*/
+/*
+  The US AQI bands, in the EPA's own colours (softened a touch so none glares),
+  shared by every theme: people know these colours on sight, so a theme should
+  not repaint them.
+*/
+:root {
+  --aqi-1: #22C55E;
+  --aqi-2: #EAB308;
+  --aqi-3: #F97316;
+  --aqi-4: #EF4444;
+  --aqi-5: #A855F7;
+  --aqi-6: #9F1239;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-line-strong: var(--line-strong);
+  --color-fill: var(--fill);
+  --color-fill-soft: var(--fill-soft);
+  --color-fill-strong: var(--fill-strong);
+
+  --color-well: var(--well);
+  --color-well-deep: var(--well-deep);
+  --color-card: var(--card);
+  --color-scrim: var(--scrim);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+
+  --color-info: var(--info);
+  --color-info-text: var(--info-text);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+
+  --color-good: var(--good);
+  --color-good-text: var(--good-text);
+  --color-good-soft: var(--good-soft);
+  --color-good-line: var(--good-line);
+
+  --color-warn: var(--warn);
+  --color-warn-text: var(--warn-text);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
+
+  --color-danger: var(--danger);
+  --color-danger-text: var(--danger-text);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+
+  --color-alt: var(--alt);
+  --color-alt-text: var(--alt-text);
+  --color-alt-soft: var(--alt-soft);
+  --color-alt-line: var(--alt-line);
+
+  --color-severe: var(--severe);
+  --color-marker: var(--marker-ring);
+  --color-cool: var(--cool);
+  --color-snow: var(--snow);
+  --color-sun: var(--sun);
+  --color-moon: var(--moon);
+  --color-sunrise: var(--sunrise);
+  --color-sunset: var(--sunset);
+}
+
+body {
+  margin: 0;
+  background-color: var(--app-bg);
+  background-image: var(--app-bg-image);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Frosted card used by the chrome: header, home page and the wide widgets. */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: var(--panel-border-hover);
+  box-shadow: var(--panel-shadow-hover);
+}
+
+.glass-button {
+  background: var(--btn-bg);
+  backdrop-filter: blur(calc(var(--panel-blur) / 2));
+  border: 1px solid var(--btn-border);
+  transition: all 0.2s ease;
+}
+
+.glass-button:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-border-hover);
+}
+
+/* Dashboard tile: the card every gauge, clock and forecast strip sits on. */
+.tile {
+  border-radius: var(--tile-radius);
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  box-shadow: var(--tile-shadow);
+  height: 100%;
+}
+
+/* A tile that opens a detail popup when tapped. */
+.tile-tap {
+  cursor: pointer;
+  border-radius: var(--tile-radius);
+  outline: none;
+}
+.tile-tap > .tile {
+  transition: border-color 150ms, transform 150ms;
+}
+.tile-tap:hover > .tile {
+  border-color: var(--line-strong);
+}
+.tile-tap:active > .tile {
+  transform: scale(0.99);
+}
+.tile-tap:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Glowing text accents. Flat themes set these to `none` and the rule goes quiet. */
+.text-glow-temp {
+  text-shadow: var(--glow-temp);
+}
+
+/* The oversized tile numerals, lifted off whatever the card is made of. */
+.text-figure {
+  text-shadow: var(--glow-figure);
+}
+
+/*
+  Severity badges on a weather alert, built from the role colours so a theme
+  only has to name those to restyle every badge.
+*/
+.badge-extreme,
+.badge-severe,
+.badge-moderate,
+.badge-minor,
+.badge-unknown {
+  border-width: 1px;
+  border-style: solid;
+}
+
+.badge-extreme {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger-text);
+}
+
+.badge-severe {
+  background: color-mix(in srgb, var(--severe) 15%, transparent);
+  border-color: color-mix(in srgb, var(--severe) 35%, transparent);
+  color: color-mix(in srgb, var(--severe) 88%, var(--ink));
+}
+
+.badge-moderate {
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+  color: var(--warn-text);
+}
+
+.badge-minor {
+  background: color-mix(in srgb, var(--cool) 15%, transparent);
+  border-color: color-mix(in srgb, var(--cool) 35%, transparent);
+  color: color-mix(in srgb, var(--cool) 88%, var(--ink));
+}
+
+.badge-unknown {
+  background: var(--fill-soft);
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+
+/*
+  The urgency stripe down the edge of an alert card: a band of colour fading
+  inward so it never fights the card's own surface.
+*/
+.stripe-immediate {
+  background: linear-gradient(to right, var(--danger), color-mix(in srgb, var(--danger) 50%, transparent), transparent);
+}
+
+.stripe-expected {
+  background: linear-gradient(to right, var(--warn), color-mix(in srgb, var(--warn) 50%, transparent), transparent);
+}
+
+.stripe-future {
+  background: linear-gradient(to right, var(--alt), color-mix(in srgb, var(--alt) 50%, transparent), transparent);
+}
+
+.stripe-past {
+  background: linear-gradient(to right, var(--ink-4), color-mix(in srgb, var(--ink-4) 50%, transparent), transparent);
+}
+
+/* Daylight progress: sunrise, through midday, into dusk. */
+.daylight-bar {
+  background: linear-gradient(to right, var(--daylight-1), var(--daylight-2), var(--daylight-3));
+}
+
+/* The other half of the cycle: dusk, through the small hours, into dawn. */
+.night-bar {
+  background: linear-gradient(to right, var(--sunset), var(--moon), var(--sunrise));
+}
+
+/* Today's temperature range, cold end to hot end. */
+.temp-range-bar {
+  background: linear-gradient(90deg, var(--range-low), var(--range-mid), var(--range-high));
+}
+
+/* Chance of rain, as a level filling a forecast card from the bottom. */
+.rain-level {
+  background: var(--rain-fill);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Popups fade in rather than snapping onto the page. */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+/* A widget just added in the dashboard editor lights up where it landed. */
+@keyframes widget-flash {
+  0% { box-shadow: 0 0 0 0 var(--accent); transform: scale(0.94); }
+  35% { box-shadow: 0 0 0 4px var(--accent-line); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); }
+}
+
+.animate-widget-flash {
+  animation: widget-flash 1.1s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* The editor's "Removed Wind · Undo" note rises into place. */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-widget-flash,
+  .animate-toast-in { animation: none; }
+}
+
+/* The full-screen alert ticker. The track holds two identical copies of the
+   headlines, so travelling exactly half its width lands back where it started
+   and the loop has no seam. */
+@keyframes alerts-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
