@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { formatInZone } from '../../lib/format';
 import { THEMES, useTheme } from '../../lib/theme';
-import type { RadarFrame } from '../../lib/radar';
+import { RADAR_MAX_ZOOM, TILE, mercator, type RadarFrame } from '../../lib/radar';
 
 /**
  * Radar frames come from RainViewer, free for personal use with credit, and
@@ -10,13 +10,22 @@ import type { RadarFrame } from '../../lib/radar';
  * (CARTO's basemaps, the usual choice, now demand an API key.)
  */
 const ESRI_CANVAS = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas';
-const TILE = 256;
 
-/** Web Mercator: a coordinate as pixels across the whole world at zoom `z`. */
-function worldPixel(lat: number, lon: number, z: number): [number, number] {
-  const size = TILE * 2 ** z;
-  const sin = Math.sin((lat * Math.PI) / 180);
-  return [((lon + 180) / 360) * size, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * size];
+interface Tile { key: string; x: number; y: number; left: number; top: number }
+
+/** The tiles at zoom `z`, each drawn `size` pixels square, that cover a w × h box centred on `view`. */
+function tilesFor(view: [number, number], z: number, size: number, w: number, h: number): Tile[] {
+  const count = 2 ** z;
+  const left = view[0] * count * size - w / 2;
+  const top = view[1] * count * size - h / 2;
+  const tiles: Tile[] = [];
+  for (let ty = Math.floor(top / size); ty <= Math.floor((top + h) / size); ty++) {
+    if (ty < 0 || ty >= count) continue;
+    for (let tx = Math.floor(left / size); tx <= Math.floor((left + w) / size); tx++) {
+      tiles.push({ key: `${tx}/${ty}`, x: ((tx % count) + count) % count, y: ty, left: tx * size - left, top: ty * size - top });
+    }
+  }
+  return tiles;
 }
 
 interface RadarMapProps {
@@ -28,6 +37,8 @@ interface RadarMapProps {
   index: number;
   failed: boolean;
   timezone: string | null;
+  /** Where the map is centred, as from `mercator`, when it has been moved off the station. */
+  view?: [number, number];
   /** Larger type for the time, for the wall. */
   large?: boolean;
   /** Credits as links; off where a tap on the map means something else. */
@@ -36,12 +47,12 @@ interface RadarMapProps {
 }
 
 /**
- * A fixed view centred on the station: the base map, every radar frame laid
+ * A view centred on the station, or wherever `view` has moved it: the base map, every radar frame laid
  * over it (only the current one visible, so the loop never waits on a
  * download), place names above the rain so they stay readable through it,
  * the station's dot, the frame's time and a notch per frame.
  */
-export const RadarMap: React.FC<RadarMapProps> = ({ lat, lon, zoom, host, frames, index, failed, timezone, large, links, className = '' }) => {
+export const RadarMap: React.FC<RadarMapProps> = ({ lat, lon, zoom, host, frames, index, failed, timezone, view, large, links, className = '' }) => {
   const { theme } = useTheme();
   const dark = THEMES.find(t => t.id === theme)?.dark ?? true;
   const box = useRef<HTMLDivElement>(null);
@@ -60,19 +71,18 @@ export const RadarMap: React.FC<RadarMapProps> = ({ lat, lon, zoom, host, frames
     return () => observer.disconnect();
   }, []);
 
-  const tiles: { key: string; x: number; y: number; left: number; top: number }[] = [];
-  if (w > 0 && h > 0) {
-    const [cx, cy] = worldPixel(lat, lon, zoom);
-    const left = cx - w / 2;
-    const top = cy - h / 2;
-    const count = 2 ** zoom;
-    for (let ty = Math.floor(top / TILE); ty <= Math.floor((top + h) / TILE); ty++) {
-      if (ty < 0 || ty >= count) continue;
-      for (let tx = Math.floor(left / TILE); tx <= Math.floor((left + w) / TILE); tx++) {
-        tiles.push({ key: `${tx}/${ty}`, x: ((tx % count) + count) % count, y: ty, left: tx * TILE - left, top: ty * TILE - top });
-      }
-    }
-  }
+  const station = mercator(lat, lon);
+  const centre = view ?? station;
+  const ready = w > 0 && h > 0;
+  const tiles = ready ? tilesFor(centre, zoom, TILE, w, h) : [];
+  // Past RainViewer's deepest zoom its tiles are stretched to fit, so the rain stays put under the sharper map.
+  const radarZoom = Math.min(zoom, RADAR_MAX_ZOOM);
+  const radarSize = TILE * 2 ** (zoom - radarZoom);
+  const radarTiles = ready ? tilesFor(centre, radarZoom, radarSize, w, h) : [];
+  // The station's dot, which leaves the centre once the map is dragged; the shorter way round the world.
+  const world = TILE * 2 ** zoom;
+  const dx = (((station[0] - centre[0] + 1.5) % 1) - 0.5) * world;
+  const dy = (station[1] - centre[1]) * world;
 
   const shade = dark ? 'Dark' : 'Light';
   const esri = (layer: 'Base' | 'Reference', x: number, y: number) => `${ESRI_CANVAS}/World_${shade}_Gray_${layer}/MapServer/tile/${zoom}/${y}/${x}`;
@@ -87,14 +97,14 @@ export const RadarMap: React.FC<RadarMapProps> = ({ lat, lon, zoom, host, frames
       {tiles.map(t => <img key={`base-${t.key}`} src={esri('Base', t.x, t.y)} alt="" className={img} style={{ left: t.left, top: t.top }} />)}
       {host && frames.map((f, i) => (
         <div key={f.path} className="absolute inset-0 transition-opacity duration-300" style={{ opacity: i === index ? 0.85 : 0 }}>
-          {tiles.map(t => (
-            <img key={t.key} src={`${host}${f.path}/512/${zoom}/${t.x}/${t.y}/2/1_1.png`} alt="" className={img} style={{ left: t.left, top: t.top }} />
+          {radarTiles.map(t => (
+            <img key={t.key} src={`${host}${f.path}/512/${radarZoom}/${t.x}/${t.y}/2/1_1.png`} alt="" className={img} style={{ left: t.left, top: t.top, width: radarSize, height: radarSize }} />
           ))}
         </div>
       ))}
       {tiles.map(t => <img key={`label-${t.key}`} src={esri('Reference', t.x, t.y)} alt="" className={img} style={{ left: t.left, top: t.top }} />)}
 
-      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-accent border-2 border-white shadow-[0_0_0_4px_rgb(0_0_0/0.25)]" />
+      <span style={{ left: w / 2 + dx, top: h / 2 + dy }} className="absolute -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-accent border-2 border-white shadow-[0_0_0_4px_rgb(0_0_0/0.25)]" />
 
       {frame && (
         <div className={`absolute left-2 top-2 rounded-lg bg-black/55 backdrop-blur px-2 py-1 font-bold text-white tabular-nums ${large ? 'text-lg' : 'text-xs'}`}>

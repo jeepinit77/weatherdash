@@ -17,6 +17,8 @@ interface ModalProps {
   className?: string;
   /** Close by itself after this long without input. Omit to stay open. */
   idleCloseMs?: number;
+  /** Cover the whole screen, edge to edge, rather than float a panel over it. */
+  fill?: boolean;
   children: React.ReactNode;
 }
 
@@ -28,7 +30,7 @@ interface ModalProps {
  * Rendered at the end of the body, so a popup opened from inside something
  * with a blur or transform (the header) still covers the whole screen.
  */
-export const Modal: React.FC<ModalProps> = ({ onClose, label, labelledBy, className = '', idleCloseMs, children }) => {
+export const Modal: React.FC<ModalProps> = ({ onClose, label, labelledBy, className = '', idleCloseMs, fill, children }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; });
@@ -81,7 +83,7 @@ export const Modal: React.FC<ModalProps> = ({ onClose, label, labelledBy, classN
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-scrim backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      className={`fixed inset-0 z-50 bg-scrim backdrop-blur-sm flex items-center justify-center animate-fade-in ${fill ? '' : 'p-4'}`}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -92,7 +94,7 @@ export const Modal: React.FC<ModalProps> = ({ onClose, label, labelledBy, classN
         aria-label={labelledBy ? undefined : label}
         aria-labelledby={labelledBy}
         tabIndex={-1}
-        className={`outline-none max-h-[90vh] overflow-y-auto overscroll-contain ${className}`}
+        className={`outline-none ${fill ? 'w-full h-full overflow-hidden' : 'max-h-[90vh] overflow-y-auto overscroll-contain'} ${className}`}
       >
         {children}
       </div>

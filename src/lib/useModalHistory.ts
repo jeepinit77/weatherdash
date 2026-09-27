@@ -11,7 +11,7 @@ import { useEffect, useId, useRef } from 'react';
  * Back afterwards behaves as if the popup had never been there. That pop is
  * skipped once the entry is no longer on top — the page navigated on while
  * the popup was open — so this can never override where navigation actually
- * sent the browser.
+ * sent the browser. Popups stack: Back closes only the topmost.
  *
  * `onClose` may return false to refuse (a form with unsaved changes asking
  * first). Back has already used up the entry by then, so it is pushed again,
@@ -44,6 +44,8 @@ export function useModalHistory(onClose: () => void | boolean) {
 
     let closedByBack = false;
     const onPopState = () => {
+      // Landing on our own entry means a popup opened over this one has just closed; this one stays.
+      if ((window.history.state as { weatherdashModal?: string } | null)?.weatherdashModal === id) return;
       closedByBack = true;
       if (onCloseRef.current() === false) {
         closedByBack = false;

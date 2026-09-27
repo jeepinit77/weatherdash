@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Minus, Pause, Play, Plus } from 'lucide-react';
+import { Maximize2, Minus, Pause, Play, Plus } from 'lucide-react';
 import { RadarMap } from '../tiles/RadarMap';
-import { RADAR_ZOOMS, useRadarFrames, useRadarLoop, useRadarZoom } from '../../lib/radar';
+import { FRAME_MS, RADAR_ZOOMS, useRadarFrames, useRadarLoop, useRadarZoom } from '../../lib/radar';
+import { RadarFullscreen } from './RadarFullscreen';
 import { formatInZone } from '../../lib/format';
 
 interface RadarDetailProps {
@@ -10,11 +11,13 @@ interface RadarDetailProps {
   timezone: string | null;
 }
 
-/** The radar large, with the loop's controls: play or hold, step through the frames, zoom. */
+/** The radar large, with the loop's controls: play or hold, step through the frames, zoom, or take it full screen. */
 export const RadarDetail: React.FC<RadarDetailProps> = ({ lat, lon, timezone }) => {
   const { host, frames, failed } = useRadarFrames();
   const [playing, setPlaying] = useState(true);
-  const [index, setIndex] = useRadarLoop(frames.length, playing);
+  const [speed, setSpeed] = useState(1);
+  const [index, setIndex] = useRadarLoop(frames.length, playing, FRAME_MS / speed);
+  const [full, setFull] = useState(false);
   const [zoom, setZoom] = useRadarZoom();
   const zoomAt = RADAR_ZOOMS.indexOf(zoom as (typeof RADAR_ZOOMS)[number]);
   const clock = (unix: number) => formatInZone(new Date(unix * 1000), timezone, { hour: 'numeric', minute: '2-digit' });
@@ -60,8 +63,30 @@ export const RadarDetail: React.FC<RadarDetailProps> = ({ lat, lon, timezone }) 
           <button type="button" onClick={() => setZoom(RADAR_ZOOMS[zoomAt + 1])} disabled={zoomAt >= RADAR_ZOOMS.length - 1} aria-label="Zoom in" title="Zoom in" className={button}>
             <Plus className="w-5 h-5" />
           </button>
+          <button type="button" onClick={() => setFull(true)} aria-label="Full screen" title="Full screen" className={button}>
+            <Maximize2 className="w-5 h-5" />
+          </button>
         </div>
       </div>
+
+      {full && (
+        <RadarFullscreen
+          lat={lat}
+          lon={lon}
+          timezone={timezone}
+          host={host}
+          frames={frames}
+          failed={failed}
+          index={index}
+          setIndex={setIndex}
+          playing={playing}
+          setPlaying={setPlaying}
+          speed={speed}
+          setSpeed={setSpeed}
+          startZoom={zoom}
+          onClose={() => setFull(false)}
+        />
+      )}
     </>
   );
 };
